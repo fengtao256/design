@@ -16,19 +16,18 @@ import java.util.Queue;
 public class Test8 {
 
     public static void main(String[] args) {
-        System.out.println("qn_1".split("qn_")[1]);
         MessageQueue messageQueue = new MessageQueue(10) ;
-        for (int i = 0; i < 30; i++) {
-            int id = i ;
-            new Thread(() -> messageQueue.put(new Message(id,"产品"+id)) ).start();
-        }
+        //源源不断的生产线程
+        new Thread(() -> {
+            int id = 0 ;
+            while( true){
+
+                messageQueue.put(new Message(++id, "产品" + id)) ;
+            }
+        }).start();
+        //永不停息的消费线程
         new Thread(() -> {
             while(true){
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
                 messageQueue.take() ;
             }
         }).start();
@@ -37,6 +36,10 @@ public class Test8 {
 
 /**
  * 消息队列
+ * 弊端，是添加的互斥锁
+ * 当生产者生产消息时，消费者不能消费消息
+ * 而消费者消费消息时，生产者不能生产消息
+ * 从而影响了生产效率
  */
 @Slf4j(topic = "消息队列")
 class MessageQueue{
@@ -44,28 +47,36 @@ class MessageQueue{
     /**
      * 消息队列,用双向链表实现
      */
-    private Queue<Message> queue = new LinkedList<>() ;
+    private Queue<Message> queue  ;
     private int capacity ;
 
     public MessageQueue(int capacity) {
         this.capacity = capacity;
+        //懒加载，当多线程实现的时候
+        queue = new LinkedList<>() ;
     }
     /**
      * 生产消息
      */
     public void put(Message message){
         //临界区，保护queue队列线程安全
-        synchronized (queue) {
+        synchronized (this) {
             while (queue.size() >= capacity){
                 try {
-                    queue.wait();
+                    //释放了锁对象，并且当前线程进入了等待状态
+                    this.wait();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }
             //生产一个消息，则唤醒消费者
+            try {
+                Thread.sleep(200);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             queue.offer(message) ;
-            queue.notifyAll();
+            this.notifyAll();
             log.debug("生产消息：{},现有库存:{}",message.toString(),queue.size() );
 
         }
@@ -76,18 +87,24 @@ class MessageQueue{
      * @return
      */
     public Message take(){
-        synchronized (queue) {
+        synchronized (this) {
             while (queue.isEmpty()) {
                 try {
-                    queue.wait();
+                    //释放了锁对象，并且当前线程进入等待状态
+                    this.wait();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }
             //消费一个消息，需要唤醒生产者
+            try {
+                Thread.sleep(300);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             Message message = queue.poll() ;
             log.debug("消费消息：{},现有库存:{}",message.toString(),queue.size() );
-            queue.notifyAll();
+            this.notifyAll();
             return message ;
         }
     }

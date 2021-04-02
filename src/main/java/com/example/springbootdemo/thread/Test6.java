@@ -41,7 +41,7 @@ public class Test6 {
 
             }
         },"T2");
-        t.setDaemon(true);
+//        t.setDaemon(true);
         t.start();
         Thread.sleep(10);
         synchronized (lock){

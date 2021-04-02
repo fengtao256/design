@@ -121,28 +121,35 @@ class GuardedObject{
 
     public Object getResponse(long timeout){
         synchronized (this){
+            //当前时间是多少？
             long begin = System.currentTimeMillis() ;
+            //现在消耗的时间
             long now = 0 ;
             //设置超时等待，同时防止虚假唤醒
             while(response == null){
+                //还剩余的延时时间是多久？
                 long delay = timeout-now ;
 
                 if(delay <= 0){
                     break ;
                 }
-
                 try {
+                    //延时过程中有可能被意外唤醒，但是延时时间还没达到，并且response还没得到
                     this.wait(delay);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-
+                //累计延时时间
                 now = System.currentTimeMillis()-begin ;
             }
             return response ;
         }
     }
 
+    /**
+     * 填充返回值
+     * @param obj
+     */
     public void complete(Object obj){
         //临界区
         synchronized (this) {

@@ -18,6 +18,7 @@ public class Test5 {
     public static void main(String[] args) throws InterruptedException {
         Acount a = new Acount(1000) ;
         Acount b = new Acount(1000) ;
+        Acount c = new Acount(1000) ;
 
         Thread threada = new Thread(() -> {
             for (int i = 0; i < 1000; i++) {
@@ -30,11 +31,21 @@ public class Test5 {
                 b.transfer(a,getRandomInt());
             }
         }) ;
+
+        Thread threadc = new Thread(() -> {
+            for (int i = 0; i < 1000; i++) {
+                c.transfer(a,getRandomInt());
+                c.transfer(b,getRandomInt());
+            }
+        }) ;
         threada.start();
         threadb.start();
         threada.join();
         threadb.join();
-        log.debug("total -> {}",a.getMoney()+b.getMoney());
+        log.debug("total -> {}",a.getMoney()+b.getMoney()+c.getMoney());
+        log.debug("money b-> {}",b.getMoney());
+        log.debug("money a-> {}",a.getMoney());
+        log.debug("money c-> {}",c.getMoney());
     }
 
     public static int getRandomInt(){
